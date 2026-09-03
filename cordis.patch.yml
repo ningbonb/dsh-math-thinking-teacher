@@ -1,0 +1,6 @@
+# Mount after dsh-web-app. A later profile patch may replace the teacher and problem.
+- insert:
+    - id: dsh-math-thinking-teacher
+      name: dsh-math-thinking-teacher
+      inject: [webServer, systemPrompt]
+      config: {}
