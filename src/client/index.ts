@@ -12,20 +12,24 @@ declare global {
   }
 }
 
-/** Required client service. */
-export const inject = ['slots']
+/** Required client services. */
+export const inject = ['slots', 'sessions']
 
-/** Register the selected-problem card in the supported composer-dock slot. */
+/** Register the task card only for sessions already composed with the mathematics preset. */
 export function installMathThinkingTeacher(ctx: ClientContext, config: MathTeacherConfig = DEFAULT_CONFIG): void {
   ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
     name: 'conversation.input.dock',
     id: 'math-thinking-teacher',
     order: -10,
-    inject: () => ({ config }),
+    inject: (sessionId) => ({
+      config,
+      isBlankSession: () => ctx.sessions.list.getSnapshot().byId[sessionId]?.blank === true,
+      isMathSession: () => ctx.sessions.list.getSnapshot().byId[sessionId]?.agentPreset === config.presetId,
+    }),
   }, MathThinkingDock))
 }
 
-/** Read the host configuration and install the non-invasive Web client surface. */
+/** Read the host configuration and install the mathematics-session-only task card. */
 export function apply(ctx: ClientContext): void {
   installMathThinkingTeacher(ctx, normalizeConfig(window[MATH_TEACHER_GLOBAL]))
 }

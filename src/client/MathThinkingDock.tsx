@@ -1,34 +1,84 @@
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { MathTeacherConfig } from './config.ts'
 
-/** Fixed learning-task card shown directly above the existing DSH composer. */
-export function MathThinkingDock({ config }: PropsRuntime<'conversation.input.dock'> & { config: MathTeacherConfig }) {
-  const { problem } = config
+type MathProblem = MathTeacherConfig['questionBank'][number]
+
+const buttonBase = {
+  alignItems: 'center', borderRadius: 18, color: 'var(--dsw-alias-label-primary)', cursor: 'pointer', display: 'inline-flex', fontSize: 14,
+  gap: 4, justifyContent: 'flex-start', lineHeight: '22px', minHeight: 36, padding: '7px 14px', textAlign: 'left' as const,
+}
+
+/** Serialize one curated question as the durable first learner message. */
+export function questionSelectionMessage(problem: MathProblem): string {
+  return `# 数学训练题目
+
+来源：${problem.source}
+
+## ${problem.title}
+
+${problem.statement}
+
+训练目标：${problem.learningGoals.join('；')}
+
+请从这个起始追问开始：${problem.openingQuestion}`
+}
+
+/** Seed the composer before a learner attaches their own problem image. */
+export const UPLOAD_QUESTION_DRAFT = '# 数学训练题目\n\n我将上传一道自定义题目。请先确认你从附件识别到的题干、条件与所求；不清楚时请追问，不要开始解答。'
+
+/** First-step selector displayed only while a mathematics session is blank. */
+export function MathThinkingDock({ config, inputActions, isBlankSession, isMathSession }: PropsRuntime<'conversation.input.dock'> & {
+  config: MathTeacherConfig
+  isBlankSession: () => boolean
+  isMathSession: () => boolean
+}) {
+  if (!isMathSession() || !isBlankSession()) return null
+
+  const chooseQuestion = (problem: MathProblem): void => {
+    inputActions.setDraft(questionSelectionMessage(problem))
+    inputActions.submit()
+  }
+
   return (
     <section
-      aria-label={`${config.teacherName} 当前题目`}
+      aria-label={`${config.teacherName} 选题`}
       data-math-thinking-teacher
       style={{
-        background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.12), rgba(14, 165, 233, 0.08))',
-        border: '1px solid rgba(99, 102, 241, 0.32)',
-        borderRadius: 12,
-        color: 'inherit',
-        margin: '0 0 10px',
-        padding: '12px 14px',
+        background: 'var(--dsw-alias-bg-layer-1)', border: '1px solid var(--dsw-alias-border-l2)', borderRadius: 16,
+        boxSizing: 'border-box', margin: '0 auto 12px', maxWidth: 'var(--dsh-composer-card-max-width)', padding: 16,
+        width: 'calc(100% - 2 * var(--dsh-composer-side-clearance))',
       }}
     >
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', marginBottom: 6 }}>
+      <div style={{ alignItems: 'center', display: 'flex', gap: 8, justifyContent: 'space-between', marginBottom: 8 }}>
         <strong>{config.teacherName}</strong>
-        <span style={{ color: '#4f46e5', fontSize: 12, fontWeight: 700 }}>思维训练中</span>
+        <span style={{ background: 'var(--dsw-alias-bg-layer-2)', borderRadius: 12, color: 'var(--dsw-alias-label-secondary)', fontSize: 12, lineHeight: '18px', padding: '3px 8px' }}>开始训练</span>
       </div>
-      <div style={{ color: '#64748b', fontSize: 12, marginBottom: 6 }}>{problem.source}</div>
-      <div style={{ fontWeight: 700, marginBottom: 6 }}>{problem.title}</div>
-      <div style={{ lineHeight: 1.55, marginBottom: 8 }}>{problem.statement}</div>
-      <div style={{ borderLeft: '3px solid #6366f1', lineHeight: 1.5, paddingLeft: 10 }}>
-        <strong>起始追问：</strong>{problem.openingQuestion}
-      </div>
-      <div style={{ color: '#475569', fontSize: 12, marginTop: 8 }}>
-        训练目标：{problem.learningGoals.join(' · ')}
+      <p style={{ lineHeight: 1.5, margin: '0 0 14px' }}>选择题库练习，或上传自己的题目。老师会从你的第一步尝试开始引导。</p>
+      <div style={{ display: 'grid', gap: 8 }}>
+        {config.questionBank.map(problem => (
+          <button
+            key={`${problem.source}:${problem.title}`}
+            onClick={() => { chooseQuestion(problem) }}
+            style={{ ...buttonBase, background: 'transparent', border: '1px solid var(--dsw-alias-border-l2)', height: 'auto', width: '100%' }}
+            type="button"
+          >
+            <span style={{ display: 'grid', gap: 3 }}>
+              <strong>{problem.title}</strong>
+              <span style={{ fontSize: 12, opacity: 0.72 }}>{problem.source}</span>
+            </span>
+          </button>
+        ))}
+        {config.questionBank.length === 0 && <span style={{ fontSize: 13, opacity: 0.72 }}>题库暂未配置，可以先上传自己的题目。</span>}
+        <button
+          onClick={() => { inputActions.setDraft(UPLOAD_QUESTION_DRAFT) }}
+          style={{ ...buttonBase, background: 'transparent', border: 0, height: 'auto', width: '100%' }}
+          type="button"
+        >
+          <span style={{ display: 'grid', gap: 3 }}>
+            <strong>上传自己的题目</strong>
+            <span style={{ fontSize: 12, opacity: 0.72 }}>在下方原生输入框添加图片或题干后，发送第一条消息。</span>
+          </span>
+        </button>
       </div>
     </section>
   )

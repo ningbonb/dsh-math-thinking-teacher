@@ -5,6 +5,7 @@ const ID = 'dsh-math-thinking-teacher'
 
 const nodeExternal = [
   '@deepseek-ai/cordis',
+  '@deepseek-ai/dsh-agent-presets',
   '@deepseek-ai/dsh-host-webserver',
   '@deepseek-ai/dsh-system-prompt',
   '@deepseek-ai/schemastery',
@@ -22,7 +23,7 @@ const clientExternal = [
 
 export default defineConfig([
   {
-    entry: { index: 'src/index.ts' },
+    entry: { index: 'src/index.ts', preset: 'src/preset.ts' },
     format: ['esm'],
     platform: 'node',
     target: 'node18',

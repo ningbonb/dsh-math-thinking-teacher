@@ -2,5 +2,5 @@
 - insert:
     - id: dsh-math-thinking-teacher
       name: dsh-math-thinking-teacher
-      inject: [webServer, systemPrompt]
+      inject: [webServer, agentPresets]
       config: {}
