@@ -2,15 +2,15 @@
 
 [中文](README.zh.md)
 
-A non-invasive DeepSeek Harness Web plugin for a live high-school mathematics tutoring demonstration. Choose its dedicated mathematics preset from DSH's native new-session page, while ordinary DSH sessions keep their original capability set and prompt.
+A selectable high-school mathematics teacher Agent preset shell for DeepSeek Harness. Choose its dedicated mathematics preset from DSH's native new-session page, while ordinary DSH sessions keep their original capability set and prompt.
 
-## What it demonstrates
+## Current scope
 
-- The native new-session preset control opens a choice card before the dedicated mathematics session starts.
-- Learners choose a curated question or attach their own problem through the native composer.
-- The teacher diagnoses the learner's latest attempt, asks one next question, and supplies the smallest useful hint.
-- Markdown, LaTeX, and handwritten-image input remain handled by the installed DSH Web client.
-- Every response ends with short, reviewable teaching evidence. This is a teaching rationale, not hidden model reasoning.
+- Installation provides a selectable `AI 高中数学思维老师` Agent preset.
+- The preset registers an open, diagnosis-first tutoring guide and shows `Choose from questions` / `Upload your own problem` for a blank mathematics session.
+- A curated problem becomes the first learner message only after the learner selects it, and that message contains only the problem statement. The upload route writes neither a draft nor a message; the learner attaches or types a problem before sending.
+- After a substantive teaching intervention, the Agent records a student-facing learning note. The mathematics dock displays its latest observation, training goal, next step, and optional hint.
+- Ordinary sessions remain on `standard`; this plugin never changes a user's default preset.
 
 ## Install
 
@@ -18,9 +18,9 @@ A non-invasive DeepSeek Harness Web plugin for a live high-school mathematics tu
 dsh plugin --profile web add dsh-math-thinking-teacher
 ```
 
-Restart `dsh web` after installation. The plugin manages its own `math-thinking-teacher` preset in the DSH user-preset root; select it from DSH's native new-session preset control. No question is selected by default.
+Restart DSH after installation. The plugin manages its own `math-thinking-teacher` preset in the DSH user-preset root; select it from DSH's native new-session preset control.
 
-## Configure a supplied question set
+## Configure
 
 Add a later row to your Web profile's `cordis.patch.yml`:
 
@@ -29,29 +29,32 @@ Add a later row to your Web profile's `cordis.patch.yml`:
   config:
     presetId: math-thinking-teacher
     teacherName: AI 高中数学思维老师
+    teacherRole: You are a one-to-one high-school mathematics thinking teacher.
+    teachingObjective: Help learners practise mathematical representation, strategy selection, verification, and reflection.
+    gradeLevel: High school
+    teacherTone: Patient, specific, and respectful of the learner's attempt.
+    hintStrength: minimal
+    diagnosticDimensions:
+      - Whether the learner identifies the givens and target correctly
+      - Whether the learner chooses a useful mathematical representation
+    interventionRules:
+      - Advance one smallest reasoning step per response
+      - Ask an answerable question before giving a hint
     questionBank:
-      - source: 2026 AI 大赛提供题库 / 题目编号
-        title: 题目标题
-        statement: '题目正文，支持 $LaTeX$'
-        openingQuestion: 先写出你想到的第一个数学对象，并说明理由。
-        learningGoals:
-          - 识别已知与待求
-          - 选择有效的数学表示
+      - source: Functions and derivatives
+        title: Function monotonicity
+        statement: 'Given $f(x)=x^3-3x+2$, study its monotonicity.'
 ```
 
-## Model Experience
+The generated preset files are plugin-owned. Override the teacher role, objective, diagnostic dimensions, intervention rules, and question bank through this configuration rather than editing them directly.
 
-### System prompt
+### Settings dialog
 
-The mathematics preset adds a stable teaching-policy section to its model requests. A curated choice or uploaded problem enters the session as the first user message. Ordinary DSH sessions do not load this section. Mathematics responses use the visible sections `思维诊断`, `下一步问题`, `最小提示`, and `教学依据`.
+The `数学思维老师` page in DSH Settings persists the learner stage, teacher tone, and hint strength. These values override the matching profile defaults for the next mathematics-mode response; the question bank and core teaching rules remain profile-managed.
 
-### Token effect
+## Development
 
-The selected-problem text and policy repeat on each request. Keep supplied questions concise.
-
-### KV Cache effect
-
-The prefix is stable while the plugin configuration is unchanged. Updating the teacher or problem changes the prompt prefix.
+After changing the plugin, run `pnpm build` and restart DSH Web to load the generated `lib/` files. Code changes should also run `pnpm test` and `git diff --check`.
 
 ## License
 

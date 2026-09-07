@@ -2,15 +2,15 @@
 
 [English](README.md)
 
-面向 DeepSeek Harness Web 的非侵入式“AI 高中数学思维老师”插件。用户在 DSH 原生新建会话页选择专属数学 preset；普通 DSH 会话保持原有能力与提示词不变。
+面向 DeepSeek Harness 的“AI 高中数学思维老师”Agent 预设骨架。用户在 DSH 原生新建会话页选择专属数学 preset；普通 DSH 会话保持原有能力与提示词不变。
 
-## 现场演示
+## 当前范围
 
-- 在 DSH 原生新建会话页选择“AI 高中数学思维老师”，先从题库选题或上传自己的题目，再进入原生聊天布局。
-- 输入学生的解题尝试，老师会先指出可观察的思维状态。
-- 每轮只推进一个思维台阶，优先让学生自己作答。
-- 手写过程图片沿用 DSH 既有图片附件能力；不清晰时老师会先确认识别内容。
-- 回复中的“教学依据”是可审阅的干预理由，不展示或伪装模型隐藏推理。
+- 安装后提供可选择的“AI 高中数学思维老师”Agent 预设。
+- 数学预设会注册开放式、诊断优先的教学引导，并在空白会话中提供“题库选题 / 上传自己的题目”入口。
+- 题库题目只有在学生主动选择后才会以题目正文作为首条用户消息提交；上传入口不会写入草稿或消息，仍由学生添加附件或题干后发送。
+- Agent 在形成实质教学干预时会记录学生可见的本轮学习要点；数学会话输入框上方显示最新的观察、训练目标、下一步与可选提示。
+- 普通会话继续使用 `standard`，插件不会修改用户的默认预设。
 
 ## 安装
 
@@ -18,7 +18,7 @@
 dsh plugin --profile web add dsh-math-thinking-teacher
 ```
 
-安装后重启 `dsh web`。插件会在 DSH 用户 preset 根目录创建并维护 `math-thinking-teacher` preset；在原生新建会话页选择它即可。内置少量练习题，但不会自动选题；比赛提供题库后可通过 Web profile 的 `cordis.patch.yml` 覆盖题库。
+安装后重启 DSH。插件会在 DSH 用户 preset 根目录创建并维护 `math-thinking-teacher` preset；在原生新建会话页选择它即可。
 
 ## 配置
 
@@ -29,29 +29,33 @@ dsh plugin --profile web add dsh-math-thinking-teacher
   config:
     presetId: math-thinking-teacher
     teacherName: AI 高中数学思维老师
+    teacherRole: 你是一位面向高中生的一对一数学思维老师。
+    teachingObjective: 帮助学生形成读题、表征、建立关系、选择策略、验证推理和反思迁移的数学思维习惯。
+    gradeLevel: 高中
+    teacherTone: 耐心、具体、尊重学生当前的尝试
+    hintStrength: minimal
+    diagnosticDimensions:
+      - 是否准确识别已知、所求与隐含条件
+      - 是否选择了合适的数学对象、图形、方程或符号表示
+    interventionRules:
+      - 把每次学生回答视为新的证据，持续修正对其当前思路的判断
+      - 一轮只推进一个最小思维台阶，不同时给出多条新路线
+      - 优先提出可回答的问题；提示必须对应当前卡点
     questionBank:
-      - source: 2026 AI 大赛提供题库 / 题目编号
-        title: 题目标题
-        statement: '题目正文，支持 $LaTeX$'
-        openingQuestion: 先写出你想到的第一个数学对象，并说明理由。
-        learningGoals:
-          - 识别已知与待求
-          - 选择有效的数学表示
+      - source: 函数与导数
+        title: 函数单调性
+        statement: 已知函数 $f(x)=x^3-3x+2$。研究 $f(x)$ 的单调性。
 ```
 
-## 模型体验
+插件维护的预设文件属于插件；不要直接编辑。老师角色、教学目标、诊断维度、干预规则和题库都可通过该配置覆盖。
 
-### 系统提示词
+### 设置弹窗
 
-只有数学 preset 会把教学规则加入模型请求。学生从题库选择的题目，或其上传图片和题干，会作为首条用户消息进入会话；普通 DSH 会话不加载这段规则。
+DSH 设置弹窗中的“数学思维老师”页面可持久化学习阶段、老师语气和提示强度。这三项会覆盖 profile 的对应基础值，并在下一次数学模式回复时生效；题库与核心教学规则仍由 profile 配置管理。
 
-### Token 影响
+## 开发
 
-教学规则会在每次请求中重复；题目作为普通会话历史随后的请求一起传递。建议将比赛题库中的题干保持精炼。
-
-### KV Cache 影响
-
-教师名称与题目配置不变时，提示词前缀稳定；更新任一配置会改变前缀。
+修改插件后运行 `pnpm build`，再重启 DSH Web 让 `lib/` 产物生效。代码修改还应运行 `pnpm test` 与 `git diff --check`。
 
 ## 许可证
 
