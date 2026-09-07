@@ -1,48 +1,41 @@
-/** Browser-safe configuration injected by the host plugin. */
-import { DEFAULT_QUESTION_BANK } from '../questions.ts'
+/** Browser-safe configuration for the mathematics teacher presentation. */
+import type { MathProblem } from '../questions.ts'
 
-export interface MathTeacherConfig {
+export interface MathTeacherClientConfig {
+  /** Preset id that enables the mathematics-only presentation. */
   presetId: string
+  /** Display name shown in the mathematics-only presentation. */
   teacherName: string
-  questionBank: Array<{
-    source: string
-    title: string
-    statement: string
-    openingQuestion: string
-    learningGoals: string[]
-  }>
+  /** Questions a learner may select before their first message. */
+  questionBank: MathProblem[]
 }
 
-/** Fallback visible before a host config is injected. */
-export const DEFAULT_CONFIG: MathTeacherConfig = {
+/** Default browser configuration when the Host injected no override. */
+export const DEFAULT_CONFIG: MathTeacherClientConfig = {
   presetId: 'math-thinking-teacher',
   teacherName: 'AI 高中数学思维老师',
-  questionBank: DEFAULT_QUESTION_BANK,
+  questionBank: [],
 }
 
-/** Accept only a complete host configuration, otherwise retain a usable demonstration card. */
-export function normalizeConfig(value: Partial<MathTeacherConfig> | undefined): MathTeacherConfig {
-  if (
-    typeof value?.presetId !== 'string'
-    || typeof value.teacherName !== 'string'
-    || !Array.isArray(value.questionBank)
-    || !value.questionBank.every(problem =>
-      typeof problem?.source === 'string'
-      && typeof problem.title === 'string'
-      && typeof problem.statement === 'string'
-      && typeof problem.openingQuestion === 'string'
-      && Array.isArray(problem.learningGoals)
-      && problem.learningGoals.every(goal => typeof goal === 'string'))
-  ) return DEFAULT_CONFIG
+function isMathProblem(value: unknown): value is MathProblem {
+  if (value === null || typeof value !== 'object') return false
+  const candidate = value as Partial<MathProblem>
+  return typeof candidate.source === 'string'
+    && typeof candidate.title === 'string'
+    && typeof candidate.statement === 'string'
+}
+
+/** Normalize the Host-injected configuration before rendering. */
+export function normalizeConfig(value: Partial<MathTeacherClientConfig> | undefined): MathTeacherClientConfig {
   return {
-    presetId: value.presetId.trim() || DEFAULT_CONFIG.presetId,
-    teacherName: value.teacherName.trim() || DEFAULT_CONFIG.teacherName,
-    questionBank: value.questionBank.map(problem => ({
-      source: problem.source.trim(),
-      title: problem.title.trim(),
-      statement: problem.statement.trim(),
-      openingQuestion: problem.openingQuestion.trim(),
-      learningGoals: problem.learningGoals.map(goal => goal.trim()).filter(Boolean),
-    })),
+    presetId: typeof value?.presetId === 'string' && value.presetId.trim().length > 0
+      ? value.presetId.trim()
+      : DEFAULT_CONFIG.presetId,
+    teacherName: typeof value?.teacherName === 'string' && value.teacherName.trim().length > 0
+      ? value.teacherName.trim()
+      : DEFAULT_CONFIG.teacherName,
+    questionBank: Array.isArray(value?.questionBank)
+      ? value.questionBank.filter(isMathProblem)
+      : DEFAULT_CONFIG.questionBank,
   }
 }

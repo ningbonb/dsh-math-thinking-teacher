@@ -1,35 +1,42 @@
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
-import { DEFAULT_CONFIG, normalizeConfig, type MathTeacherConfig } from './config.ts'
-import { MathThinkingDock } from './MathThinkingDock.tsx'
+import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import { MathTeacherDock } from './MathTeacherDock.tsx'
+import { normalizeConfig, type MathTeacherClientConfig } from './config.ts'
+import { TeacherSettingsSection } from './TeacherSettingsSection.tsx'
+import { SETTINGS_NAMESPACE, type MathTeacherPreferences } from '../preferences.ts'
 
-/** Global injected by the host bundle before browser modules execute. */
+/** Global injected by the Host bundle before browser modules execute. */
 export const MATH_TEACHER_GLOBAL = '__NINGBO_DSH_MATH_THINKING_TEACHER__'
 
 declare global {
   interface Window {
-    __NINGBO_DSH_MATH_THINKING_TEACHER__?: Partial<MathTeacherConfig>
+    __NINGBO_DSH_MATH_THINKING_TEACHER__?: Partial<MathTeacherClientConfig>
   }
 }
 
 /** Required client services. */
-export const inject = ['slots', 'sessions']
+export const inject = ['slots', 'settingsScope']
 
-/** Register the task card only for sessions already composed with the mathematics preset. */
-export function installMathThinkingTeacher(ctx: ClientContext, config: MathTeacherConfig = DEFAULT_CONFIG): void {
+/** Register a presentation that renders only for mathematics-preset sessions. */
+export function installMathTeacherDock(ctx: ClientContext, config: MathTeacherClientConfig): void {
   ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
     name: 'conversation.input.dock',
     id: 'math-thinking-teacher',
     order: -10,
-    inject: (sessionId) => ({
-      config,
-      isBlankSession: () => ctx.sessions.list.getSnapshot().byId[sessionId]?.blank === true,
-      isMathSession: () => ctx.sessions.list.getSnapshot().byId[sessionId]?.agentPreset === config.presetId,
-    }),
-  }, MathThinkingDock))
+    inject: () => ({ config }),
+  }, MathTeacherDock))
 }
 
-/** Read the host configuration and install the mathematics-session-only task card. */
+/** Read Host configuration and register the mathematics-only presentation. */
 export function apply(ctx: ClientContext): void {
-  installMathThinkingTeacher(ctx, normalizeConfig(window[MATH_TEACHER_GLOBAL]))
+  installMathTeacherDock(ctx, normalizeConfig(window[MATH_TEACHER_GLOBAL]))
+  const settings = ctx.settingsScope.bind<MathTeacherPreferences>({ namespace: SETTINGS_NAMESPACE })
+  ctx.slots.inject('settings.section', () => ctx.slots.register({
+    name: 'settings.section',
+    id: 'math-thinking-teacher',
+    order: 80,
+    label: '数学思维老师',
+    inject: () => ({ settings }),
+  }, TeacherSettingsSection))
 }
